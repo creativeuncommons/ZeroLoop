@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.DS_Store
+
+# SQLite WAL and journal files
+*.db-wal
+*.db-shm
+.zeroloop/
+
+# Testing & distribution
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/

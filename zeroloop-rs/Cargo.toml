@@ -1,0 +1,23 @@
+[package]
+name = "zeroloop-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Ultra-lean, zero-bloat, crash-proof durable agent state machine in Rust"
+license = "MIT"
+authors = ["ZeroLoop Core Team"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rusqlite = { version = "0.31", features = ["bundled"] }
+sha2 = "0.10"
+uuid = { version = "1.8", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+[[bin]]
+name = "zeroloop"
+path = "src/main.rs"
+
+[lib]
+name = "zeroloop"
+path = "src/lib.rs"

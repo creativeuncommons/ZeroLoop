@@ -1,0 +1,43 @@
+name: ZeroLoop CI/CD & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  python-test:
+    name: Python Conformance & Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run CI Conformance Grader
+        run: python scripts/zeroloop-check --audit
+      - name: Run Core Tests
+        run: python tests/test_zeroloop.py
+      - name: Run Integration Bridge Tests
+        run: python tests/test_bridges.py
+
+  rust-test:
+    name: Rust Core Build & Conformance Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Check Rust Crate
+        run: cd zeroloop-rs && cargo check
+      - name: Build Release Binary
+        run: cd zeroloop-rs && cargo build --release
