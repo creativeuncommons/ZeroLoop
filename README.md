@@ -26,36 +26,56 @@ Heavyweight orchestration engines (like Temporal or Airflow) require running sep
 
 ## 2. Architecture & Ecosystem Integration
 
-```
-                            ┌───────────────────────────┐
-                            │    User / Orchestrator    │
-                            └─────────────┬─────────────┘
-                                          │ (Task Definition)
-                                          ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        PROJECT 5: ZEROLOOP (The Durable Heartbeat)                     │
-│  • Event-Sourced Journaling (SQLite WAL)                                               │
-│  • Idempotency Gate (Prevents Duplicate Tool Calls)                                    │
-│  • State Transitions: PENDING -> RUNNING -> AWAITING_APPROVAL -> COMPLETED / FAILED    │
-└───────────────┬───────────────────────────────┬────────────────────────────┬───────────┘
-                │ 1. Sanitized Prompt           │ 2. Routed Call             │ 3. Tool Call
-                ▼                               ▼                            ▼
-      ┌──────────────────┐            ┌──────────────────┐         ┌──────────────────┐
-      │     ZEROLEAK     │            │    HYPERGATE     │         │     ZEROMCP      │
-      │  (PII / Secret   │            │   (System-1 &    │         │  (Deterministic  │
-      │   Sanitization)  │            │  Cost Profiler)  │         │  Tool Dispatch)  │
-      └──────────────────┘            └──────────────────┘         └──────────────────┘
-                │                               │                            │
-                └───────────────────────────────┼────────────────────────────┘
-                                                │
-                                                ▼
-                                      ┌──────────────────┐
-                                      │    AGENTTRACE    │
-                                      │  (Telemetry &    │
-                                      │  Trajectory DAG) │
-                                      └──────────────────┘
+ZeroLoop provides the durable execution backbone in the **CreativeUnCommons** agent architecture suite. Each tool in the ecosystem operates under a strict **Zero-Third-Party-Dependency Mandate** (Python standard library only), **Sub-Millisecond Execution Budgets**, and **Deterministic Correctness**:
+
+```mermaid
+flowchart TD
+    subgraph S1["1. Durability & State Machine"]
+        ZL["⚡ <b>ZeroLoop</b> (This Package)<br/>• Event-Sourced SQLite WAL<br/>• Idempotent Tool Execution<br/>• Deterministic Crash Recovery"]
+    end
+
+    subgraph S2["2. Privacy & Compliance Boundary"]
+        ZLeak["🛡️ <b>ZeroLeak</b><br/>• Sub-50µs Reversible PII Masking<br/>• Ephemeral In-Memory Vault<br/>• Prompt-Injection Firewall"]
+    end
+
+    subgraph S3["3. Context & Cost Routing"]
+        HG["🚪 <b>HyperGate</b><br/>• In-Memory BM25 Tool Pruning (&lt;1ms)<br/>• System-1 Fast Path (90/10 Split)<br/>• Budget Ceiling Circuit-Breaker"]
+    end
+
+    subgraph S4["4. Tool Execution & Wire Protocol"]
+        ZMCP["🔌 <b>ZeroMCP</b><br/>• Raw JSON-RPC 2.0 Stdio/SSE Core<br/>• Content-Addressed Storage (CAS)<br/>• Scoped Capability Delegation"]
+    end
+
+    subgraph S5["5. Universal Observability"]
+        AT["🌲 <b>AgentTrace</b><br/>• W3C Distributed Context (traceparent)<br/>• OpenTelemetry GenAI Semantics<br/>• Sub-ms JSONL / SQLite & OTLP Exporter"]
+    end
+
+    Task["User / Autonomous Task"] --> ZL
+    ZL -->|"Step 1: Ingest State"| ZLeak
+    ZLeak -->|"Step 2: Redacted Safe Prompt"| HG
+    HG -->|"Step 3: Pruned Tool Schemas"| Model["Cloud / Local LLM"]
+    Model -->|"Step 4: Tool Call"| ZMCP
+    ZMCP -->|"Step 5: CAS Output Pointer"| ZLeak
+    ZLeak -->|"Step 6: Restored Data"| ZL
+    ZL -->|"Step 7: Verified Result"| Done["Task Completion"]
+
+    ZL -.->|"State Transitions"| AT
+    ZLeak -.->|"Sanitization Spans"| AT
+    HG -.->|"Token & Cost Metrics"| AT
+    ZMCP -.->|"Tool IPC Spans"| AT
 ```
 
+### Complete Runtime Synergy
+
+| Package | Role in Unified Stack | Standalone Capability | What You Achieve Together |
+| :--- | :--- | :--- | :--- |
+| **[⚡ ZeroLoop](https://github.com/creativeuncommons/ZeroLoop)** | **Durable Orchestrator** *(This Package)* | Event-sourced state machine with crash recovery & async human pauses. | Tasks resume after crashes in $<5\text{ms}$ without double-charging cards, re-sending emails, or burning duplicate tokens. |
+| **[🛡️ ZeroLeak](https://github.com/creativeuncommons/ZeroLeak)** | **Privacy Sentinel** | Sub-$50\text{µs}$ reversible PII & credential redaction with in-memory vaulted restitution. | Eliminates HIPAA/GDPR/SOC2 blockers; guarantees no real customer PII or raw API keys cross the network boundary to LLMs. |
+| **[🚪 HyperGate](https://github.com/creativeuncommons/HyperGate)** | **Inference Router & Tool Pruner** | Sub-millisecond BM25 inverted index tool pruner, System-1 classifier, and budget kill-switch. | Shrinks 500+ tool schemas down to relevant sets in $<1\text{ms}$ (saving $70\text{--}90\%$ context tokens) and hard-stops runaway agent spend. |
+| **[🔌 ZeroMCP](https://github.com/creativeuncommons/ZeroMCP)** | **Tool Protocol & CAS Engine** | Zero-dependency Model Context Protocol (MCP) runtime (stdio/SSE) with CAS storage. | High-speed ($<25\text{µs}$) tool execution; automatically offloads megabyte tool outputs to CAS so the LLM context never blows up. |
+| **[🌲 AgentTrace](https://github.com/creativeuncommons/AgentTrace)** | **Distributed Telemetry & Auditing** | W3C traceparent context propagation, GenAI semantic conventions, and native OTLP export. | Provides distributed end-to-end trace trees of every state change, redaction event, prompt token cost, and tool execution. |
+
+### Ecosystem Integration Points
 * **ZeroMCP Integration**: ZeroLoop supervises ZeroMCP tool dispatches. Each tool execution is paired with a deterministic idempotency token `hash(step_idx, tool_name, sanitized_inputs)`. If a crash occurs mid-loop, ZeroLoop skips re-invoking the ZeroMCP server and replays the cached output.
 * **HyperGate Integration**: ZeroLoop queries `HyperGateRouter` on each LLM step to maintain System-1 fast routing and in-flight budget tracking. HyperGate's cost ledger syncs with ZeroLoop's event journal.
 * **ZeroLeak Integration**: All prompts and tool outputs passing through ZeroLoop state transitions are de-identified via `ZeroLeak` before hitting LLM inference, ensuring session journals contain zero unmasked secrets.
