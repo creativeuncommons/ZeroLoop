@@ -995,7 +995,15 @@ class DurableLoop:
             except Exception:
                 pass
 
+        # Release database lock on completion
+        self.journal.close()
+
         return receipt
+
+    def close(self):
+        """Flushes and releases journal database lock."""
+        if hasattr(self, "journal") and self.journal:
+            self.journal.close()
 
     def fail(self, error: Union[str, Exception]):
         """Marks loop failed with diagnostic traceback summary."""
