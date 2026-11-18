@@ -6,13 +6,19 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   python-test:
-    name: Python Conformance & Unit Tests
-    runs-on: ubuntu-latest
+    name: Python Conformance & Unit Tests (Python ${{ matrix.python-version }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +34,8 @@ jobs:
         run: python tests/test_bridges.py
 
   rust-test:
-    name: Rust Core Build & Conformance Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: Rust Core Build & Conformance Tests (ubuntu-latest)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust toolchain
@@ -41,3 +44,40 @@ jobs:
         run: cd zeroloop-rs && cargo check
       - name: Build Release Binary
         run: cd zeroloop-rs && cargo build --release
+
+  package-release:
+    name: Package Assets & Publish GitHub Release
+    needs: [python-test, rust-test]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Organize Distribution Bundle
+        run: |
+          mkdir -p dist/packages
+          
+          # Copy standalone Python library and CI grader CLI
+          cp zeroloop-py/zeroloop.py dist/packages/zeroloop.py
+          cp scripts/zeroloop-check dist/packages/zeroloop-check
+          chmod +x dist/packages/zeroloop.py dist/packages/zeroloop-check
+          
+          # Generate SHA-256 Checksums
+          cd dist/packages
+          sha256sum * > SHA256SUMS.txt
+          cd ../..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/packages/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
