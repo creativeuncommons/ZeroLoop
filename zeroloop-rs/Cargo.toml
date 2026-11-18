@@ -3,7 +3,7 @@ name = "zeroloop-rs"
 version = "0.1.0"
 edition = "2021"
 description = "Ultra-lean, zero-bloat, crash-proof durable agent state machine in Rust"
-license = "MIT"
+license = "Apache-2.0"
 authors = ["ZeroLoop Core Team"]
 
 [dependencies]

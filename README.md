@@ -2,7 +2,7 @@
 
 > **Ultra-lean, zero-external-dependency, event-sourced durable execution state machine designed to replace fragile in-memory `while True` loops in autonomous AI agents.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Dependencies: Zero](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Stdlib)-brightgreen.svg)]()
 [![Rehydration: < 5ms](https://img.shields.io/badge/Rehydration-%3C%205ms-purple.svg)]()
@@ -213,4 +213,4 @@ Rust and Python share the **exact same SQLite WAL on-disk database files**, cryp
 
 ## 8. License
 
-MIT License. Designed and maintained by the Autonomous Agents Core Team.
+Distributed under the [Apache License 2.0](LICENSE). Designed and maintained by the CreativeUnCommons Team.
