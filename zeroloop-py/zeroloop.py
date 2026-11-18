@@ -23,6 +23,7 @@ import uuid
 import shutil
 import hashlib
 import sqlite3
+import pathlib
 import datetime
 import argparse
 import functools
@@ -534,7 +535,8 @@ def prune_journals(
         loop_state = None
         temp_conn = None
         try:
-            temp_conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=2.0)
+            db_uri = pathlib.Path(db_path).resolve().as_uri() + "?mode=ro"
+            temp_conn = sqlite3.connect(db_uri, uri=True, timeout=2.0)
             cursor = temp_conn.cursor()
             cursor.execute("SELECT key, value FROM meta WHERE key IN ('state', 'loop_id');")
             meta_rows = dict(cursor.fetchall())

@@ -33,7 +33,7 @@ ZEROLOOP_PY = os.path.join(PROJECT_ROOT, "zeroloop-py", "zeroloop.py")
 STD_MODULES = {
     "os", "sys", "json", "time", "uuid", "shutil", "hashlib", "sqlite3",
     "datetime", "argparse", "functools", "enum", "dataclasses", "typing",
-    "contextlib", "unittest", "tempfile", "copy", "re", "threading"
+    "contextlib", "unittest", "tempfile", "copy", "re", "threading", "pathlib"
 }
 
 
