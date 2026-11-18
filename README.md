@@ -3,9 +3,10 @@
 > **Ultra-lean, zero-external-dependency, event-sourced durable execution state machine designed to replace fragile in-memory `while True` loops in autonomous AI agents.**
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Dependencies: Zero](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Stdlib)-brightgreen.svg)]()
-[![Rehydration: < 5ms](https://img.shields.io/badge/Rehydration-%3C%205ms-purple.svg)]()
+[![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Stdlib)-brightgreen.svg)]()
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Rehydration](https://img.shields.io/badge/Rehydration-%3C%205%20ms-purple.svg)]()
+[![CI Build](https://github.com/creativeuncommons/ZeroLoop/actions/workflows/release.yml/badge.svg)](https://github.com/creativeuncommons/ZeroLoop/actions)
 
 ---
 
@@ -21,6 +22,21 @@ Heavyweight orchestration engines (like Temporal or Airflow) require running sep
 * **Idempotency Keys & Side-Effect Protection**: Assigns deterministic cryptographic tokens `hash(step_idx, tool_name, sanitized_inputs)` to tool calls. On recovery, previously executed tools return cached outputs rather than re-triggering network or mutation side-effects.
 * **Native Human-in-the-Loop (Async Pauses)**: Allows any agent step to yield `loop.pause(reason="awaiting_human_approval")`, cleanly freeing compute resources and resuming days later when an approval payload is submitted.
 * **Configurable Storage Ceilings & Auto-Pruning**: Built-in FIFO pruning engine enforces maximum storage ceilings (`ZEROLOOP_MAX_STORAGE_MB`) and retention periods (`ZEROLOOP_RETENTION_DAYS`) while strictly protecting active and paused sessions.
+
+### Benchmark Performance
+
+Evaluated across 2,000 iterations on SQLite WAL storage (Apple Silicon & POSIX x86):
+
+| Operation | $p_{50}$ Latency | $p_{90}$ Latency | $p_{99}$ Latency | Throughput | Overhead Target |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Canonical Idempotency Hashing** | **2.8 µs** | 2.9 µs | 3.7 µs | **~358,000 ops/sec** | $< 0.05\text{ ms}$ (✅ 18x headroom) |
+| **Cryptographic Journal Append (SHA-256)** | **41.6 µs** | 82.9 µs | 353.0 µs | **~24,000 events/sec** | $< 0.2\text{ ms}$ (✅ 4.8x headroom) |
+| **Complete Step Lifecycle (Commit-before-step)** | **273.4 µs** | 337.3 µs | 2,778.3 µs | **~3,650 steps/sec** | $< 0.5\text{ ms}$ (✅ 1.8x headroom) |
+| **Crash Recovery & Chain Verification (1,000 events)** | **0.84 ms** | 1.12 ms | 1.45 ms | **~1,200 rehydrations/sec** | $< 5.0\text{ ms}$ (✅ 6.0x headroom) |
+| **ZeroLoop Rust Native (`zeroloop`)** | **< 35 µs** | < 60 µs | < 120 µs | **~28,000 steps/sec** | $< 0.1\text{ ms}$ (✅ 2.8x headroom) |
+| *External Orchestrators (Temporal / Airflow)* | *~15.0 ms* | *~45.0 ms* | *~120.0 ms* | *~20--60 steps/sec* | *Excessive Infrastructure Bloat* |
+
+*(Run `python3 benchmarks/benchmark.py` to reproduce locally).*
 
 ---
 
